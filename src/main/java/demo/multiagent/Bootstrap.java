@@ -5,6 +5,7 @@ import akka.javasdk.DependencyProvider;
 import akka.javasdk.ServiceSetup;
 import akka.javasdk.annotations.Setup;
 import akka.javasdk.client.ComponentClient;
+import demo.multiagent.application.SessionMemory;
 import demo.multiagent.application.agents.ActivityAgent;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
@@ -17,8 +18,10 @@ public class Bootstrap implements ServiceSetup {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
+  private final SessionMemory sessionMemory;
 
   public Bootstrap(ComponentClient componentClient) {
+
     if (!KeyUtils.hasValidKeys()) {
       logger.error(
           "No API keys found. When running locally, make sure you have a " + ".env.local file located under " +
@@ -27,22 +30,22 @@ public class Bootstrap implements ServiceSetup {
       throw new RuntimeException("No API keys found.");
     }
 
+      this.sessionMemory = new SessionMemory(componentClient);
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public DependencyProvider createDependencyProvider() {
 
-
     return new DependencyProvider() {
       @Override
       public <T> T getDependency(Class<T> cls) {
         if (cls.equals(WeatherAgent.class)) {
-            return (T) new WeatherAgent();
+            return (T) new WeatherAgent(sessionMemory);
         }
 
         if (cls.equals(ActivityAgent.class)) {
-          return (T) new ActivityAgent();
+          return (T) new ActivityAgent(sessionMemory);
         }
 
         if (cls.equals(Selector.class)) {

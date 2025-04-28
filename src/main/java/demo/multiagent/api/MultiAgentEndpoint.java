@@ -10,6 +10,8 @@ import akka.javasdk.http.HttpResponses;
 import demo.multiagent.application.AgenticWorkflow;
 import demo.multiagent.application.agents.Selector;
 
+import java.util.UUID;
+
 
 @Acl(allow = @Acl.Matcher(principal = Acl.Principal.INTERNET))
 @HttpEndpoint("/chat")
@@ -24,8 +26,9 @@ public class MultiAgentEndpoint {
     this.componentClient = componentClient;
   }
 
-  @Post("/{chatId}")
-  public HttpResponse handleRequest(String chatId, Request request) {
+  @Post()
+  public HttpResponse handleRequest( Request request) {
+    var chatId = UUID.randomUUID().toString();
     var res =
       componentClient
       .forWorkflow(chatId)

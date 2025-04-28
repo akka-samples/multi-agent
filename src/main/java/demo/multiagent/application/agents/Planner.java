@@ -28,13 +28,13 @@ public class Planner {
            "steps": [
               {
                 "agentId": "<the id of the agent>",
-                "commandDescription: "<description of the command>",
+                "query: "<agent tailored query>",
               }
            ]
          }
       
         The '<the id of the agent>' should be filled with the agent id.
-        The '<description of the command>' should contain the agent tailored message.
+        The '<agent tailored query>' should contain the agent tailored message.
         The order og the items inside the "steps" array should be the order of execution.
       
         Do not include any explanations or text outside of the JSON structure.

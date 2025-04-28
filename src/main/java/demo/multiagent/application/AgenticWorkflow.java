@@ -1,14 +1,15 @@
 package demo.multiagent.application;
 
 import akka.Done;
-import akka.javasdk.JsonSupport;
+import akka.javasdk.DependencyProvider;
 import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.workflow.Workflow;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
+import demo.multiagent.common.Agents;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
+import demo.multiagent.domain.PlanStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,24 +23,47 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
 
   private final Logger logger = LoggerFactory.getLogger(AgenticWorkflow.class);
 
+  private final DependencyProvider dependencyProvider;
+
   enum Status {
     STARTED,
     COMPLETED,
     FAILED,
   }
 
-  public record State(String userQuery, String answer, Status status) {
+  public record State(String userQuery,
+                      Plan plan,
+                      String answer,
+                      Status status) {
 
     public static State init(String query) {
-      return new State(query, "", STARTED);
+      return new State(query, new Plan(), "", STARTED);
     }
 
+
     public State withAnswer(String answer) {
-      return new State(userQuery, answer, COMPLETED);
+      return new State(userQuery, plan, this.answer + " " + answer, status);
+    }
+
+    public PlanStep pickFirstPlanStep() {
+      return plan.steps().getFirst();
+    }
+
+    public State removeFirstPlanStep() {
+      plan.steps().removeFirst();
+      return this;
+    }
+
+    public State withPlan(Plan plan) {
+      return new State(userQuery, plan, answer, STARTED);
+    }
+
+    public State complete() {
+      return new State(userQuery, plan, answer, COMPLETED);
     }
 
     public State failed() {
-      return new State(userQuery, answer, FAILED);
+      return new State(userQuery, plan, answer, FAILED);
     }
   }
 
@@ -47,7 +71,8 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
   private final Planner planner;
 
 
-  public AgenticWorkflow(Selector agentSelector, Planner planner) {
+  public AgenticWorkflow(DependencyProvider dependencyProvider, Selector agentSelector, Planner planner) {
+    this.dependencyProvider = dependencyProvider;
     this.selector = agentSelector;
     this.planner = planner;
   }
@@ -55,7 +80,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
   @Override
   public WorkflowDef<State> definition() {
     return workflow()
-      .defaultStepRecoverStrategy(maxRetries(5).failoverTo(INTERRUPT))
+      .defaultStepRecoverStrategy(maxRetries(1).failoverTo(INTERRUPT))
       .addStep(selectAgent())
       .addStep(planExecution())
       .addStep(runPlan())
@@ -88,7 +113,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
     return step(SELECT_AGENTS)
       .call(() -> selector.selectAgents(currentState().userQuery))
       .andThen(AgentSelection.class, selection -> {
-          logger.info("Selected agents: {}", selection.agents());
+        logger.debug("Selected agents: {}", selection.agents());
           return effects().transitionTo(CREATE_PLAN_EXECUTION, selection);
         }
       );
@@ -99,7 +124,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
   private Step planExecution() {
     return step(CREATE_PLAN_EXECUTION)
       .call(AgentSelection.class, agentSelection -> {
-          logger.info(
+        logger.debug(
             "Calling planner with {} / {}",
             currentState().userQuery,
             agentSelection.agents());
@@ -108,8 +133,10 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
         }
       )
       .andThen(Plan.class, plan -> {
-          logger.info("Execution plan: {}", plan);
-          return effects().transitionTo(EXECUTE_PLAN, plan);
+        logger.debug("Execution plan: {}", plan);
+        return effects()
+          .updateState(currentState().withPlan(plan))
+          .transitionTo(EXECUTE_PLAN);
         }
       );
   }
@@ -118,17 +145,35 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
 
   private Step runPlan() {
     return step(EXECUTE_PLAN)
-      .call(Plan.class, plan -> {
-        try {
-          // TODO: execute each PlanStep
-          // for now, just returning the plan as json for debugging
-          return JsonSupport.getObjectMapper().writeValueAsString(plan);
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException(e);
+      .call(() -> {
+
+        var stepPlan = currentState().pickFirstPlanStep();
+        logger.debug("Executing plan step (agent:{}), asking {}", stepPlan.agentId(), stepPlan.query());
+
+        var agentCls = Agents.getAgent(stepPlan.agentId());
+        var agent = dependencyProvider.getDependency(agentCls);
+
+        var agentResponse = agent.query(commandContext().workflowId(), stepPlan.query());
+        if (agentResponse.isValid()) {
+          logger.debug("Response from [agent:{}]: '{}'", stepPlan.agentId(), agentResponse);
+          return agentResponse.response();
+        } else {
+          throw new RuntimeException("Agent '" + stepPlan.agentId() + "' responded with error: " + agentResponse.error());
         }
+
       })
-      .andThen(String.class, answer ->
-        effects().updateState(currentState().withAnswer(answer)).end()
+      .andThen(String.class, answer -> {
+
+          logger.debug("Adding answer '{}'", answer);
+          var newState = currentState().withAnswer(answer).removeFirstPlanStep();
+          if (newState.plan().steps().isEmpty()) {
+            logger.debug("No further steps to execute.");
+            return effects().updateState(newState.complete()).end();
+          } else {
+            logger.debug("Still {} steps to execute.", newState.plan().steps().size());
+            return effects().updateState(newState).transitionTo(EXECUTE_PLAN);
+          }
+        }
       );
   }
 
@@ -137,7 +182,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
   private Workflow.Step interrupt() {
     return step(INTERRUPT)
       .call(() -> {
-        logger.info("Interrupting workflow");
+        logger.debug("Interrupting workflow");
         return Done.getInstance();
       })
       .andThen(Done.class, __ -> effects().updateState(currentState().failed()).end());

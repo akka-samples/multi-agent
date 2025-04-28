@@ -1,6 +1,7 @@
 
 package demo.multiagent.domain;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,6 +13,6 @@ public record Plan(List<PlanStep> steps) {
    * Creates an empty plan with no steps.
    */
   public Plan() {
-    this(List.of());
+    this(new ArrayList<>());
   }
 }
