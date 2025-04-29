@@ -10,6 +10,7 @@ import demo.multiagent.application.agents.ActivityAgent;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
 import demo.multiagent.application.agents.WeatherAgent;
+import demo.multiagent.common.AgentsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,23 +38,24 @@ public class Bootstrap implements ServiceSetup {
   @SuppressWarnings("unchecked")
   public DependencyProvider createDependencyProvider() {
 
+    var agentsRegister =
+      new AgentsRegistry()
+        .register(new WeatherAgent(sessionMemory))
+        .register(new ActivityAgent(sessionMemory));
+
     return new DependencyProvider() {
       @Override
       public <T> T getDependency(Class<T> cls) {
-        if (cls.equals(WeatherAgent.class)) {
-            return (T) new WeatherAgent(sessionMemory);
-        }
-
-        if (cls.equals(ActivityAgent.class)) {
-          return (T) new ActivityAgent(sessionMemory);
+        if (cls.equals(AgentsRegistry.class)) {
+          return (T) agentsRegister;
         }
 
         if (cls.equals(Selector.class)) {
-          return  (T) new Selector();
+          return (T) new Selector(agentsRegister);
         }
 
         if (cls.equals(Planner.class)) {
-          return (T) new Planner();
+          return (T) new Planner(agentsRegister);
         }
 
         return null;

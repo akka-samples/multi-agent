@@ -1,12 +1,11 @@
 package demo.multiagent.application;
 
 import akka.Done;
-import akka.javasdk.DependencyProvider;
 import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.workflow.Workflow;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
-import demo.multiagent.common.Agents;
+import demo.multiagent.common.AgentsRegistry;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
 import demo.multiagent.domain.PlanStep;
@@ -21,9 +20,6 @@ import static demo.multiagent.application.AgenticWorkflow.Status.STARTED;
 @ComponentId("agentic-workflow")
 public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
 
-  private final Logger logger = LoggerFactory.getLogger(AgenticWorkflow.class);
-
-  private final DependencyProvider dependencyProvider;
 
   enum Status {
     STARTED,
@@ -67,12 +63,15 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
     }
   }
 
+  private final Logger logger = LoggerFactory.getLogger(AgenticWorkflow.class);
+
+  private final AgentsRegistry agentsRegistry;
   private final Selector selector;
   private final Planner planner;
 
 
-  public AgenticWorkflow(DependencyProvider dependencyProvider, Selector agentSelector, Planner planner) {
-    this.dependencyProvider = dependencyProvider;
+  public AgenticWorkflow(AgentsRegistry agentsRegistry, Selector agentSelector, Planner planner) {
+    this.agentsRegistry = agentsRegistry;
     this.selector = agentSelector;
     this.planner = planner;
   }
@@ -150,8 +149,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
         var stepPlan = currentState().pickFirstPlanStep();
         logger.debug("Executing plan step (agent:{}), asking {}", stepPlan.agentId(), stepPlan.query());
 
-        var agentCls = Agents.getAgent(stepPlan.agentId());
-        var agent = dependencyProvider.getDependency(agentCls);
+        var agent = agentsRegistry.getAgent(stepPlan.agentId());
 
         var agentResponse = agent.query(commandContext().workflowId(), stepPlan.query());
         if (agentResponse.isValid()) {

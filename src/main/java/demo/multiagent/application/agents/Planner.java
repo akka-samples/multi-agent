@@ -1,12 +1,19 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.Agents;
+import demo.multiagent.common.AgentsRegistry;
 import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
 import dev.langchain4j.service.AiServices;
 
 public class Planner {
+
+  private final AgentsRegistry agentsRegistry;
+
+  public Planner(AgentsRegistry agentsRegistry) {
+    this.agentsRegistry = agentsRegistry;
+  }
+
 
   private String getSystemMessage(AgentSelection selection) {
     return """
@@ -41,7 +48,7 @@ public class Planner {
       
       """
       // note: here we are not using the full list of agents, but a pre-selection
-      .formatted(Agents.agentSelectionInJson(selection.agents()));
+      .formatted(agentsRegistry.agentSelectionInJson(selection.agents()));
   }
 
   interface Assistant {

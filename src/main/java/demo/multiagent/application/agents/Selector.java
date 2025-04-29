@@ -1,6 +1,6 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.Agents;
+import demo.multiagent.common.AgentsRegistry;
 import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentSelection;
 import dev.langchain4j.service.AiServices;
@@ -9,8 +9,7 @@ public class Selector {
 
   private final String systemMessage;
 
-
-  public Selector() {
+  public Selector(AgentsRegistry agentsRegistry) {
 
     this.systemMessage = """
         Your job is to analyse the user request and select the agents that should be used to answer the user.
@@ -37,7 +36,7 @@ public class Selector {
         You can find the list of exiting agents below (in JSON format):
         Also important, use the agent id to identify the agents.
         %s
-      """.formatted(Agents.allAgentsInJson());
+      """.formatted(agentsRegistry.allAgentsInJson());
   }
 
   interface Assistant {
