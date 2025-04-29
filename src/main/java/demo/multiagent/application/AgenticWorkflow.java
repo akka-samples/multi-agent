@@ -38,7 +38,10 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
 
 
     public State withAnswer(String answer) {
-      return new State(userQuery, plan, this.answer + " " + answer, status);
+      if (this.answer.isEmpty())
+        return new State(userQuery, plan, answer, status);
+      else
+        return new State(userQuery, plan, this.answer + " " + answer, status);
     }
 
     public PlanStep pickFirstPlanStep() {
@@ -133,9 +136,18 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
       )
       .andThen(Plan.class, plan -> {
         logger.debug("Execution plan: {}", plan);
+        if (plan.steps().isEmpty()) {
+
+          var newState = currentState()
+            .withAnswer("Couldn't find any agent(s) able to respond to the original query.")
+            .failed();
+          return effects().updateState(newState).end(); // terminate workflow
+
+        } else {
         return effects()
           .updateState(currentState().withPlan(plan))
           .transitionTo(EXECUTE_PLAN);
+        }
         }
       );
   }
