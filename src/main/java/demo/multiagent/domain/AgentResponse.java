@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public record AgentResponse(String response, String error) {
 
+
   private static final Logger logger = LoggerFactory.getLogger(AgentResponse.class);
   public static AgentResponse fromJson(String json) {
     try {

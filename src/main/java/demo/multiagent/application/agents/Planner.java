@@ -15,7 +15,7 @@ public class Planner {
   }
 
 
-  private String getSystemMessage(AgentSelection selection) {
+  private String buildSystemMessage(AgentSelection selection) {
     return """
         Your job is to analyse the user request and the list of agents and devise the best order in which
         the agents should be called in order to produce a suitable answer to the user.
@@ -60,7 +60,7 @@ public class Planner {
 
     var assistant = AiServices.builder(Planner.Assistant.class)
       .chatLanguageModel(OpenAiUtils.chatModel())
-      .systemMessageProvider(__ -> getSystemMessage(agentSelection))
+      .systemMessageProvider(__ -> buildSystemMessage(agentSelection))
       .build();
 
     return assistant.chat(message);

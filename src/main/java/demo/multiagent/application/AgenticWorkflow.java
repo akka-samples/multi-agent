@@ -5,12 +5,18 @@ import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.workflow.Workflow;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
+import demo.multiagent.application.agents.Summarizer;
 import demo.multiagent.common.AgentsRegistry;
+import demo.multiagent.domain.AgentResponse;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
 import demo.multiagent.domain.PlanStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static demo.multiagent.application.AgenticWorkflow.Status.COMPLETED;
 import static demo.multiagent.application.AgenticWorkflow.Status.FAILED;
@@ -29,41 +35,47 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
 
   public record State(String userQuery,
                       Plan plan,
-                      String answer,
+                      String finalAnswer,
+                      Map<String, AgentResponse> agentResponses,
                       Status status) {
 
     public static State init(String query) {
-      return new State(query, new Plan(), "", STARTED);
+      return new State(query, new Plan(), "", new HashMap<>(), STARTED);
     }
 
 
-    public State withAnswer(String answer) {
-      if (this.answer.isEmpty())
-        return new State(userQuery, plan, answer, status);
-      else
-        return new State(userQuery, plan, this.answer + " " + answer, status);
+    public State withFinalAnswer(String answer) {
+      return new State(userQuery, plan, answer, agentResponses, status);
     }
 
-    public PlanStep pickFirstPlanStep() {
-      return plan.steps().getFirst();
-    }
-
-    public State removeFirstPlanStep() {
-      plan.steps().removeFirst();
+    public State addAgentResponse(AgentResponse response) {
+      // when we add a response, we always do it for the agent at the head of the plan queue
+      // therefore we remove it from the queue and proceed
+      var agentId = plan.steps().removeFirst().agentId();
+      agentResponses.put(agentId, response);
       return this;
     }
 
+    public PlanStep nextStepPlan() {
+      return plan.steps().getFirst();
+    }
+
+    public boolean hasMoreSteps() {
+      return !plan.steps().isEmpty();
+    }
+
     public State withPlan(Plan plan) {
-      return new State(userQuery, plan, answer, STARTED);
+      return new State(userQuery, plan, finalAnswer, agentResponses, STARTED);
     }
 
     public State complete() {
-      return new State(userQuery, plan, answer, COMPLETED);
+      return new State(userQuery, plan, finalAnswer, agentResponses, COMPLETED);
     }
 
     public State failed() {
-      return new State(userQuery, plan, answer, FAILED);
+      return new State(userQuery, plan, finalAnswer, agentResponses, FAILED);
     }
+
   }
 
   private final Logger logger = LoggerFactory.getLogger(AgenticWorkflow.class);
@@ -71,12 +83,15 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
   private final AgentsRegistry agentsRegistry;
   private final Selector selector;
   private final Planner planner;
+  private final Summarizer summarizer;
 
 
-  public AgenticWorkflow(AgentsRegistry agentsRegistry, Selector agentSelector, Planner planner) {
+  public AgenticWorkflow(AgentsRegistry agentsRegistry, Selector agentSelector, Planner planner, Summarizer summarizer) {
     this.agentsRegistry = agentsRegistry;
+
     this.selector = agentSelector;
     this.planner = planner;
+    this.summarizer = summarizer;
   }
 
   @Override
@@ -85,7 +100,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
       .defaultStepRecoverStrategy(maxRetries(1).failoverTo(INTERRUPT))
       .addStep(selectAgent())
       .addStep(planExecution())
-      .addStep(runPlan())
+      .addStep(runPlan()).addStep(summarize())
       .addStep(interrupt());
   }
 
@@ -105,7 +120,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
     if (currentState() == null) {
       return effects().error("Workflow '" + commandContext().workflowId() + "' not started");
     } else {
-      return effects().reply(currentState().answer());
+      return effects().reply(currentState().finalAnswer());
     }
   }
 
@@ -127,7 +142,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
     return step(CREATE_PLAN_EXECUTION)
       .call(AgentSelection.class, agentSelection -> {
         logger.debug(
-            "Calling planner with {} / {}",
+            "Calling planner with: '{}' / {}",
             currentState().userQuery,
             agentSelection.agents());
 
@@ -139,15 +154,15 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
         if (plan.steps().isEmpty()) {
 
           var newState = currentState()
-            .withAnswer("Couldn't find any agent(s) able to respond to the original query.")
+            .withFinalAnswer("Couldn't find any agent(s) able to respond to the original query.")
             .failed();
           return effects().updateState(newState).end(); // terminate workflow
 
         } else {
-        return effects()
-          .updateState(currentState().withPlan(plan))
-          .transitionTo(EXECUTE_PLAN);
-        }
+          return effects()
+            .updateState(currentState().withPlan(plan))
+            .transitionTo(EXECUTE_PLAN);
+          }
         }
       );
   }
@@ -158,33 +173,51 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
     return step(EXECUTE_PLAN)
       .call(() -> {
 
-        var stepPlan = currentState().pickFirstPlanStep();
+        var stepPlan = currentState().nextStepPlan();
         logger.debug("Executing plan step (agent:{}), asking {}", stepPlan.agentId(), stepPlan.query());
-
         var agent = agentsRegistry.getAgent(stepPlan.agentId());
 
         var agentResponse = agent.query(commandContext().workflowId(), stepPlan.query());
         if (agentResponse.isValid()) {
           logger.debug("Response from [agent:{}]: '{}'", stepPlan.agentId(), agentResponse);
-          return agentResponse.response();
+          return agentResponse;
         } else {
           throw new RuntimeException("Agent '" + stepPlan.agentId() + "' responded with error: " + agentResponse.error());
         }
 
       })
-      .andThen(String.class, answer -> {
+      .andThen(AgentResponse.class, answer -> {
 
-          logger.debug("Adding answer '{}'", answer);
-          var newState = currentState().withAnswer(answer).removeFirstPlanStep();
-          if (newState.plan().steps().isEmpty()) {
-            logger.debug("No further steps to execute.");
-            return effects().updateState(newState.complete()).end();
-          } else {
+        var newState = currentState().addAgentResponse(answer);
+
+          if (newState.hasMoreSteps()) {
             logger.debug("Still {} steps to execute.", newState.plan().steps().size());
             return effects().updateState(newState).transitionTo(EXECUTE_PLAN);
+          } else {
+            logger.debug("No further steps to execute.");
+            return effects().updateState(newState).transitionTo(SUMMARIZE);
           }
+
         }
       );
+  }
+
+  private static final String SUMMARIZE = "summarize";
+
+  private Step summarize() {
+    return step(SUMMARIZE)
+      .call(() -> {
+
+        var agentsAnswers =
+          currentState().agentResponses.values().stream()
+            .map(AgentResponse::response)
+            .filter(response -> response != null && !response.isEmpty())
+            .collect(Collectors.joining(" "));
+
+        return summarizer.summarize(currentState().userQuery, agentsAnswers);
+      })
+      .andThen(String.class, finalAnswer ->
+        effects().updateState(currentState().withFinalAnswer(finalAnswer).complete()).end());
   }
 
   private static final String INTERRUPT = "interrupt";

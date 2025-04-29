@@ -9,6 +9,7 @@ import demo.multiagent.application.SessionMemory;
 import demo.multiagent.application.agents.ActivityAgent;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
+import demo.multiagent.application.agents.Summarizer;
 import demo.multiagent.application.agents.WeatherAgent;
 import demo.multiagent.common.AgentsRegistry;
 import org.slf4j.Logger;
@@ -56,6 +57,10 @@ public class Bootstrap implements ServiceSetup {
 
         if (cls.equals(Planner.class)) {
           return (T) new Planner(agentsRegister);
+        }
+
+        if (cls.equals(Summarizer.class)) {
+          return (T) new Summarizer();
         }
 
         return null;
