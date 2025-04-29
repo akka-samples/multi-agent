@@ -5,10 +5,13 @@ import akka.javasdk.DependencyProvider;
 import akka.javasdk.ServiceSetup;
 import akka.javasdk.annotations.Setup;
 import akka.javasdk.client.ComponentClient;
+import demo.multiagent.application.SessionMemory;
 import demo.multiagent.application.agents.ActivityAgent;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
+import demo.multiagent.application.agents.Summarizer;
 import demo.multiagent.application.agents.WeatherAgent;
+import demo.multiagent.common.AgentsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +20,10 @@ public class Bootstrap implements ServiceSetup {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
+  private final SessionMemory sessionMemory;
 
   public Bootstrap(ComponentClient componentClient) {
+
     if (!KeyUtils.hasValidKeys()) {
       logger.error(
           "No API keys found. When running locally, make sure you have a " + ".env.local file located under " +
@@ -27,30 +32,35 @@ public class Bootstrap implements ServiceSetup {
       throw new RuntimeException("No API keys found.");
     }
 
+      this.sessionMemory = new SessionMemory(componentClient);
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public DependencyProvider createDependencyProvider() {
 
+    var agentsRegister =
+      new AgentsRegistry()
+        .register(new WeatherAgent(sessionMemory))
+        .register(new ActivityAgent(sessionMemory));
 
     return new DependencyProvider() {
       @Override
       public <T> T getDependency(Class<T> cls) {
-        if (cls.equals(WeatherAgent.class)) {
-            return (T) new WeatherAgent();
-        }
-
-        if (cls.equals(ActivityAgent.class)) {
-          return (T) new ActivityAgent();
+        if (cls.equals(AgentsRegistry.class)) {
+          return (T) agentsRegister;
         }
 
         if (cls.equals(Selector.class)) {
-          return  (T) new Selector();
+          return (T) new Selector(agentsRegister);
         }
 
         if (cls.equals(Planner.class)) {
-          return (T) new Planner();
+          return (T) new Planner(agentsRegister);
+        }
+
+        if (cls.equals(Summarizer.class)) {
+          return (T) new Summarizer();
         }
 
         return null;

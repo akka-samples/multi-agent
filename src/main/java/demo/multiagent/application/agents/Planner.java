@@ -1,6 +1,6 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.Agents;
+import demo.multiagent.common.AgentsRegistry;
 import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
@@ -8,7 +8,14 @@ import dev.langchain4j.service.AiServices;
 
 public class Planner {
 
-  private String getSystemMessage(AgentSelection selection) {
+  private final AgentsRegistry agentsRegistry;
+
+  public Planner(AgentsRegistry agentsRegistry) {
+    this.agentsRegistry = agentsRegistry;
+  }
+
+
+  private String buildSystemMessage(AgentSelection selection) {
     return """
         Your job is to analyse the user request and the list of agents and devise the best order in which
         the agents should be called in order to produce a suitable answer to the user.
@@ -28,20 +35,20 @@ public class Planner {
            "steps": [
               {
                 "agentId": "<the id of the agent>",
-                "commandDescription: "<description of the command>",
+                "query: "<agent tailored query>",
               }
            ]
          }
       
         The '<the id of the agent>' should be filled with the agent id.
-        The '<description of the command>' should contain the agent tailored message.
+        The '<agent tailored query>' should contain the agent tailored message.
         The order og the items inside the "steps" array should be the order of execution.
       
         Do not include any explanations or text outside of the JSON structure.
       
       """
       // note: here we are not using the full list of agents, but a pre-selection
-      .formatted(Agents.agentSelectionInJson(selection.agents()));
+      .formatted(agentsRegistry.agentSelectionInJson(selection.agents()));
   }
 
   interface Assistant {
@@ -53,7 +60,7 @@ public class Planner {
 
     var assistant = AiServices.builder(Planner.Assistant.class)
       .chatLanguageModel(OpenAiUtils.chatModel())
-      .systemMessageProvider(__ -> getSystemMessage(agentSelection))
+      .systemMessageProvider(__ -> buildSystemMessage(agentSelection))
       .build();
 
     return assistant.chat(message);
