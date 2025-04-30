@@ -8,7 +8,6 @@ import akka.javasdk.annotations.http.Post;
 import akka.javasdk.client.ComponentClient;
 import akka.javasdk.http.HttpResponses;
 import demo.multiagent.application.AgenticWorkflow;
-import demo.multiagent.application.agents.Selector;
 
 import java.util.UUID;
 
@@ -40,12 +39,15 @@ public class MultiAgentEndpoint {
 
   @Get("/{chatId}")
   public HttpResponse getAnswer(String chatId) {
-    var res =
-      componentClient
-        .forWorkflow(chatId)
-        .method(AgenticWorkflow::getAnswer)
-        .invoke();
+      var res =
+        componentClient
+          .forWorkflow(chatId)
+          .method(AgenticWorkflow::getAnswer)
+          .invoke();
 
-    return HttpResponses.ok(res);
+      if (res.isEmpty())
+        return HttpResponses.notFound("Answer for '" + chatId + "' not available (yet)");
+      else
+        return HttpResponses.ok(res);
   }
 }
