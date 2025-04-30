@@ -207,13 +207,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
   private Step summarize() {
     return step(SUMMARIZE)
       .call(() -> {
-
-        var agentsAnswers =
-          currentState().agentResponses.values().stream()
-            .map(AgentResponse::response)
-            .filter(response -> response != null && !response.isEmpty())
-            .collect(Collectors.joining(" "));
-
+        var agentsAnswers = currentState().agentResponses.values();
         return summarizer.summarize(currentState().userQuery, agentsAnswers);
       })
       .andThen(String.class, finalAnswer ->

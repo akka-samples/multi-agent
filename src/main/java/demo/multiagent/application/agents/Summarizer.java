@@ -1,7 +1,11 @@
 package demo.multiagent.application.agents;
 
+import demo.multiagent.domain.AgentResponse;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
+
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 
 public class Summarizer {
@@ -32,14 +36,19 @@ public class Summarizer {
   }
 
 
-  public String summarize(String originalQuery, String agentsResponses) {
+  public String summarize(String originalQuery, Collection<AgentResponse> agentsResponses) {
+
+    var allResponses = agentsResponses.stream()
+      .map(AgentResponse::response)
+      .filter(response -> response != null && !response.isEmpty())
+      .collect(Collectors.joining(" "));
 
     var assistant = AiServices.builder(Assistant.class)
       .chatLanguageModel(chatLanguageModel)
       .systemMessageProvider(__ -> buildSystemMessage(originalQuery))
       .build();
 
-    return assistant.chat("Summarize the following message: '" + agentsResponses + "'");
+    return assistant.chat("Summarize the following message: '" + allResponses + "'");
   }
 
 }
