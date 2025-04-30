@@ -1,7 +1,4 @@
-package demo.multiagent.common;
-
-import demo.multiagent.application.agents.Agent;
-import demo.multiagent.application.agents.AgentCard;
+package demo.multiagent.application.agents;
 
 import java.util.ArrayList;
 import java.util.Collection;

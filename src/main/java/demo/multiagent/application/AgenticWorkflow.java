@@ -6,7 +6,7 @@ import akka.javasdk.workflow.Workflow;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
 import demo.multiagent.application.agents.Summarizer;
-import demo.multiagent.common.AgentsRegistry;
+import demo.multiagent.application.agents.AgentsRegistry;
 import demo.multiagent.domain.AgentResponse;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;

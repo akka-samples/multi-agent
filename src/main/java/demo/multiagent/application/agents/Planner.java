@@ -1,6 +1,5 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.AgentsRegistry;
 import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;

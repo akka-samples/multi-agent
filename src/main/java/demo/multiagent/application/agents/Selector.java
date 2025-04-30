@@ -1,6 +1,5 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.AgentsRegistry;
 import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentSelection;
 import dev.langchain4j.service.AiServices;
