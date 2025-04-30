@@ -20,7 +20,7 @@ public class Bootstrap implements ServiceSetup {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final SessionMemory sessionMemory;
+  private final ComponentClient componentClient;
 
   public Bootstrap(ComponentClient componentClient) {
 
@@ -32,13 +32,14 @@ public class Bootstrap implements ServiceSetup {
       throw new RuntimeException("No API keys found.");
     }
 
-      this.sessionMemory = new SessionMemory(componentClient);
+      this.componentClient = componentClient;
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public DependencyProvider createDependencyProvider() {
 
+    var sessionMemory = new SessionMemory(componentClient);
     var agentsRegister =
       new AgentsRegistry()
         .register(new WeatherAgent(sessionMemory))
