@@ -1,19 +1,21 @@
 package demo.multiagent.application.agents;
 
 import demo.multiagent.application.SessionMemory;
-import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentResponse;
 import demo.multiagent.domain.MessageAdapter;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
 
 public abstract class Agent {
 
   private final SessionMemory sessionMemory;
+  private final ChatLanguageModel chatLanguageModel;
 
-  protected Agent(SessionMemory sessionMemory) {
+  protected Agent(SessionMemory sessionMemory, ChatLanguageModel chatLanguageModel) {
     this.sessionMemory = sessionMemory;
+    this.chatLanguageModel = chatLanguageModel;
   }
 
   interface Assistant {
@@ -66,8 +68,8 @@ public abstract class Agent {
       .id(memoryId)
       .build();
 
-    var assistant = AiServices.builder(ActivityAgent.Assistant.class)
-      .chatLanguageModel(OpenAiUtils.chatModel())
+    var assistant = AiServices.builder(Assistant.class)
+      .chatLanguageModel(chatLanguageModel)
       .chatMemory(chatMemory)
       .systemMessageProvider(__ -> agentSpecificSystemMessage() + agentResponseSpec)
       .build();

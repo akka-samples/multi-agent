@@ -1,6 +1,7 @@
 package demo.multiagent.application.agents;
 
 import demo.multiagent.application.SessionMemory;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 
 // TODO: make this agent interact with a real weather API
 @AgentCard(
@@ -20,8 +21,8 @@ public class WeatherAgent extends Agent {
       forecasts, and other related information.
     """;
 
-  public WeatherAgent(SessionMemory sessionMemory) {
-    super(sessionMemory);
+  public WeatherAgent(SessionMemory sessionMemory, ChatLanguageModel chatLanguageModel) {
+    super(sessionMemory, chatLanguageModel);
   }
 
 

@@ -1,16 +1,18 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 
 public class Planner {
 
   private final AgentsRegistry agentsRegistry;
+  private final ChatLanguageModel chatLanguageModel;
 
-  public Planner(AgentsRegistry agentsRegistry) {
+  public Planner(AgentsRegistry agentsRegistry, ChatLanguageModel chatLanguageModel) {
     this.agentsRegistry = agentsRegistry;
+    this.chatLanguageModel = chatLanguageModel;
   }
 
 
@@ -58,7 +60,7 @@ public class Planner {
   public Plan createPlan(String message, AgentSelection agentSelection) {
 
     var assistant = AiServices.builder(Planner.Assistant.class)
-      .chatLanguageModel(OpenAiUtils.chatModel())
+      .chatLanguageModel(chatLanguageModel)
       .systemMessageProvider(__ -> buildSystemMessage(agentSelection))
       .build();
 

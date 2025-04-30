@@ -1,16 +1,22 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.OpenAiUtils;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 
 
 public class Summarizer {
 
+  private final ChatLanguageModel chatLanguageModel;
+
+  public Summarizer(ChatLanguageModel chatLanguageModel) {
+    this.chatLanguageModel = chatLanguageModel;
+  }
+
   interface Assistant {
     String chat(String message);
   }
 
-  private String buildSystemMessage(String userQuery, String agentsResponses) {
+  private String buildSystemMessage(String userQuery) {
     return  """
         You will receive the original query and a message generate by different other agents.
       
@@ -29,8 +35,8 @@ public class Summarizer {
   public String summarize(String originalQuery, String agentsResponses) {
 
     var assistant = AiServices.builder(Assistant.class)
-      .chatLanguageModel(OpenAiUtils.chatModel())
-      .systemMessageProvider(__ -> buildSystemMessage(originalQuery, agentsResponses))
+      .chatLanguageModel(chatLanguageModel)
+      .systemMessageProvider(__ -> buildSystemMessage(originalQuery))
       .build();
 
     return assistant.chat("Summarize the following message: '" + agentsResponses + "'");

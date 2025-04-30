@@ -12,6 +12,9 @@ import demo.multiagent.application.agents.Selector;
 import demo.multiagent.application.agents.Summarizer;
 import demo.multiagent.application.agents.WeatherAgent;
 import demo.multiagent.application.agents.AgentsRegistry;
+import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModelName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,16 +37,22 @@ public class Bootstrap implements ServiceSetup {
 
       this.componentClient = componentClient;
   }
+  final private static OpenAiChatModelName chatModelName = OpenAiChatModelName.GPT_4_O_MINI;
 
   @Override
   @SuppressWarnings("unchecked")
   public DependencyProvider createDependencyProvider() {
 
+    ChatLanguageModel chatModel = OpenAiChatModel.builder()
+      .apiKey(KeyUtils.readOpenAiKey())
+      .modelName(chatModelName)
+      .build();
+
     var sessionMemory = new SessionMemory(componentClient);
     var agentsRegister =
       new AgentsRegistry()
-        .register(new WeatherAgent(sessionMemory))
-        .register(new ActivityAgent(sessionMemory));
+        .register(new WeatherAgent(sessionMemory, chatModel))
+        .register(new ActivityAgent(sessionMemory, chatModel));
 
     return new DependencyProvider() {
       @Override
@@ -53,15 +62,15 @@ public class Bootstrap implements ServiceSetup {
         }
 
         if (cls.equals(Selector.class)) {
-          return (T) new Selector(agentsRegister);
+          return (T) new Selector(agentsRegister, chatModel);
         }
 
         if (cls.equals(Planner.class)) {
-          return (T) new Planner(agentsRegister);
+          return (T) new Planner(agentsRegister, chatModel);
         }
 
         if (cls.equals(Summarizer.class)) {
-          return (T) new Summarizer();
+          return (T) new Summarizer(chatModel);
         }
 
         return null;

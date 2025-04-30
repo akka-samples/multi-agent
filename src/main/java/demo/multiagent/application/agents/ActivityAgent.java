@@ -1,6 +1,7 @@
 package demo.multiagent.application.agents;
 
 import demo.multiagent.application.SessionMemory;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 
 @AgentCard(
   id = "activity-agent",
@@ -17,9 +18,10 @@ public class ActivityAgent extends Agent {
       building activity, sports, an indoor or outdoor game, board games, a city trip, etc.
     """;
 
-  public ActivityAgent(SessionMemory sessionMemory) {
-    super(sessionMemory);
+  public ActivityAgent(SessionMemory sessionMemory, ChatLanguageModel chatLanguageModel) {
+    super(sessionMemory, chatLanguageModel);
   }
+
 
   @Override
   public String agentSpecificSystemMessage() {

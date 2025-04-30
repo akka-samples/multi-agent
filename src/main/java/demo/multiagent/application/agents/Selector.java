@@ -1,14 +1,15 @@
 package demo.multiagent.application.agents;
 
-import demo.multiagent.common.OpenAiUtils;
 import demo.multiagent.domain.AgentSelection;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 
 public class Selector {
 
   private final String systemMessage;
+  private final ChatLanguageModel chatLanguageModel;
 
-  public Selector(AgentsRegistry agentsRegistry) {
+  public Selector(AgentsRegistry agentsRegistry, ChatLanguageModel chatLanguageModel) {
 
     this.systemMessage = """
         Your job is to analyse the user request and select the agents that should be used to answer the user.
@@ -36,6 +37,7 @@ public class Selector {
         Also important, use the agent id to identify the agents.
         %s
       """.formatted(agentsRegistry.allAgentsInJson());
+    this.chatLanguageModel = chatLanguageModel;
   }
 
   interface Assistant {
@@ -44,7 +46,7 @@ public class Selector {
 
   public AgentSelection selectAgents(String message) {
     var assistant = AiServices.builder(Selector.Assistant.class)
-      .chatLanguageModel(OpenAiUtils.chatModel())
+      .chatLanguageModel(chatLanguageModel)
       .systemMessageProvider(__ -> systemMessage)
       .build();
 
