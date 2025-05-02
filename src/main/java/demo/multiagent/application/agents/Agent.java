@@ -8,6 +8,9 @@ import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.store.memory.chat.InMemoryChatMemoryStore;
 
+import java.util.Collection;
+import java.util.Collections;
+
 public abstract class Agent {
 
   private final SessionMemory sessionMemory;
@@ -20,6 +23,10 @@ public abstract class Agent {
 
   interface Assistant {
     String chat(String message);
+  }
+
+  public  Collection<Object> availableTools() {
+    return Collections.emptyList();
   }
 
   public abstract String agentSpecificSystemMessage();
@@ -72,6 +79,7 @@ public abstract class Agent {
       .chatLanguageModel(chatLanguageModel)
       .chatMemory(chatMemory)
       .systemMessageProvider(__ -> agentSpecificSystemMessage() + agentResponseSpec)
+      .tools(availableTools())
       .build();
 
     var res = AgentResponse.fromJson(assistant.chat(message));

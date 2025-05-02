@@ -5,6 +5,7 @@ import akka.javasdk.DependencyProvider;
 import akka.javasdk.ServiceSetup;
 import akka.javasdk.annotations.Setup;
 import akka.javasdk.client.ComponentClient;
+import akka.javasdk.http.HttpClientProvider;
 import demo.multiagent.application.SessionMemory;
 import demo.multiagent.application.agents.ActivityAgent;
 import demo.multiagent.application.agents.AgentsRegistry;
@@ -24,9 +25,11 @@ public class Bootstrap implements ServiceSetup {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final ComponentClient componentClient;
+  private final HttpClientProvider httpClientProvider;
   private final String OPENAI_API_KEY = "OPENAI_API_KEY";
 
-  public Bootstrap(ComponentClient componentClient) {
+  public Bootstrap(ComponentClient componentClient, HttpClientProvider httpClientProvider) {
+    this.httpClientProvider = httpClientProvider;
 
     if (System.getenv(OPENAI_API_KEY).isEmpty()) {
       logger.error(
@@ -50,7 +53,7 @@ public class Bootstrap implements ServiceSetup {
     var sessionMemory = new SessionMemory(componentClient);
     var agentsRegister =
       new AgentsRegistry()
-        .register(new WeatherAgent(sessionMemory, chatModel))
+        .register(new WeatherAgent(sessionMemory, chatModel, httpClientProvider))
         .register(new ActivityAgent(sessionMemory, chatModel));
 
     return new DependencyProvider() {
