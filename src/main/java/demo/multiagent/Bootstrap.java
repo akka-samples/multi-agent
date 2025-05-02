@@ -7,11 +7,11 @@ import akka.javasdk.annotations.Setup;
 import akka.javasdk.client.ComponentClient;
 import demo.multiagent.application.SessionMemory;
 import demo.multiagent.application.agents.ActivityAgent;
+import demo.multiagent.application.agents.AgentsRegistry;
 import demo.multiagent.application.agents.Planner;
 import demo.multiagent.application.agents.Selector;
 import demo.multiagent.application.agents.Summarizer;
 import demo.multiagent.application.agents.WeatherAgent;
-import demo.multiagent.application.agents.AgentsRegistry;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModelName;
@@ -24,14 +24,13 @@ public class Bootstrap implements ServiceSetup {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final ComponentClient componentClient;
+  private final String OPENAI_API_KEY = "OPENAI_API_KEY";
 
   public Bootstrap(ComponentClient componentClient) {
 
-    if (!KeyUtils.hasValidKeys()) {
+    if (System.getenv(OPENAI_API_KEY).isEmpty()) {
       logger.error(
-          "No API keys found. When running locally, make sure you have a " + ".env.local file located under " +
-              "src/main/resources/ (see src/main/resources/.env.example). When running in production, " +
-              "make sure you have OPENAI_API_KEY defined as environment variable.");
+        "No API keys found. Make sure you have OPENAI_API_KEY defined as environment variable.");
       throw new RuntimeException("No API keys found.");
     }
 
@@ -44,7 +43,7 @@ public class Bootstrap implements ServiceSetup {
   public DependencyProvider createDependencyProvider() {
 
     ChatLanguageModel chatModel = OpenAiChatModel.builder()
-      .apiKey(KeyUtils.readOpenAiKey())
+      .apiKey(System.getenv(OPENAI_API_KEY))
       .modelName(chatModelName)
       .build();
 
