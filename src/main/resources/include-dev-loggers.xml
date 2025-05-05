@@ -9,5 +9,5 @@
      when the application runs. 
  -->
 <included>
-    <logger name="io.akka.ai" level="DEBUG"/>
+    <logger name="demo.multiagent" level="DEBUG"/>
 </included>
