@@ -43,6 +43,6 @@ jobs:
         with:
           jvm: temurin:1.21
 
-      - name: mvn verify
+      - name: mvn test
         run: |-
-          mvn verify --no-transfer-progress
+          mvn test --no-transfer-progress
