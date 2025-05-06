@@ -31,7 +31,7 @@ public class Bootstrap implements ServiceSetup {
   public Bootstrap(ComponentClient componentClient, HttpClientProvider httpClientProvider) {
     this.httpClientProvider = httpClientProvider;
 
-    if (System.getenv(OPENAI_API_KEY).isEmpty()) {
+    if (System.getenv(OPENAI_API_KEY) == null || System.getenv(OPENAI_API_KEY).isEmpty()) {
       logger.error(
         "No API keys found. Make sure you have OPENAI_API_KEY defined as environment variable.");
       throw new RuntimeException("No API keys found.");

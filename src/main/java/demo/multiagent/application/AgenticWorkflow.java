@@ -14,6 +14,7 @@ import demo.multiagent.domain.PlanStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 import static demo.multiagent.application.AgenticWorkflow.Status.COMPLETED;
 import static demo.multiagent.application.AgenticWorkflow.Status.FAILED;
 import static demo.multiagent.application.AgenticWorkflow.Status.STARTED;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 
 @ComponentId("agentic-workflow")
@@ -98,6 +100,7 @@ public class AgenticWorkflow extends Workflow<AgenticWorkflow.State> {
   public WorkflowDef<State> definition() {
     return workflow()
       .defaultStepRecoverStrategy(maxRetries(1).failoverTo(INTERRUPT))
+      .defaultStepTimeout(Duration.of(30, SECONDS))
       .addStep(selectAgent())
       .addStep(planExecution())
       .addStep(runPlan()).addStep(summarize())
