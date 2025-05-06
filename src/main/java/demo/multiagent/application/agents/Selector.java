@@ -21,7 +21,7 @@ public class Selector {
         Note that this is just an example. The list of available agents may vary, so you need to use reasoning to dissect the original user request
         and using the list of available agents, decide which agents must be selected.
       
-        You don't need to come up with an execution order. Your task it to analyze user's request and select the agents.
+        You don't need to come up with an execution order. Your task is to analyze user's request and select the agents.
       
         Your response should follow a strict json schema as defined bellow.
         It should contain a single field 'agents'. The field agents must be array of strings containing the agent's IDs.
@@ -33,7 +33,7 @@ public class Selector {
       
         Do not include any explanations or text outside of the JSON structure.
       
-        You can find the list of exiting agents below (in JSON format):
+        You can find the list of existing agents below (in JSON format):
         Also important, use the agent id to identify the agents.
         %s
       """.formatted(agentsRegistry.allAgentsInJson());

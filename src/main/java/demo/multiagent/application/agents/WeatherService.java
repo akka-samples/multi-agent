@@ -17,7 +17,7 @@ public class WeatherService {
   private HttpClient httpClient;
 
   public WeatherService(HttpClientProvider httpClientProvider) {
-    if (!System.getenv(WEATHER_API_KEY).isEmpty()) {
+    if (System.getenv(WEATHER_API_KEY) != null && !System.getenv(WEATHER_API_KEY).isEmpty()) {
       this.httpClient = httpClientProvider.httpClientFor("https://api.weatherapi.com");
     }
   }

@@ -1,6 +1,5 @@
 package demo.multiagent.application.agents;
 
-import akka.javasdk.http.HttpClient;
 import akka.javasdk.http.HttpClientProvider;
 import demo.multiagent.application.SessionMemory;
 import dev.langchain4j.model.chat.ChatLanguageModel;
@@ -8,7 +7,6 @@ import dev.langchain4j.model.chat.ChatLanguageModel;
 import java.util.Collection;
 import java.util.List;
 
-// TODO: make this agent interact with a real weather API
 @AgentCard(
     id = "weather-agent",
     name = "Weather Agent",
