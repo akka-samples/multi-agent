@@ -1,22 +1,36 @@
 package demo.multiagent.application.agents;
 
+import akka.javasdk.agent.Agent;
+import akka.javasdk.agent.AgentRegistry;
+import akka.javasdk.annotations.AgentDescription;
+import akka.javasdk.annotations.ComponentId;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.service.AiServices;
 
-public class Planner {
+import java.util.stream.Collectors;
 
-  private final AgentsRegistry agentsRegistry;
-  private final ChatLanguageModel chatLanguageModel;
+@ComponentId("planner-agent")
+@AgentDescription(
+    name = "Planner",
+    description = """
+        An agent that analyzes the user request and available agents to plan the tasks
+        to produce a suitable answer.
+        """)
+public class Planner extends Agent {
 
-  public Planner(AgentsRegistry agentsRegistry, ChatLanguageModel chatLanguageModel) {
+  public record Request(String message, AgentSelection agentSelection) {}
+
+  private final AgentRegistry agentsRegistry;
+
+  public Planner(AgentRegistry agentsRegistry) {
     this.agentsRegistry = agentsRegistry;
-    this.chatLanguageModel = chatLanguageModel;
   }
 
-
   private String buildSystemMessage(AgentSelection selection) {
+    var agents = selection.agents().stream()
+        .map(agentsRegistry::agentInfoAsJson)
+        .collect(Collectors.joining(", ", "[", "]"));
+
     return """
         Your job is to analyse the user request and the list of agents and devise the best order in which
         the agents should be called in order to produce a suitable answer to the user.
@@ -47,23 +61,16 @@ public class Planner {
       
         Do not include any explanations or text outside of the JSON structure.
       
-      """
+      """.stripIndent()
       // note: here we are not using the full list of agents, but a pre-selection
-      .formatted(agentsRegistry.agentSelectionInJson(selection.agents()));
+      .formatted(agents);
   }
 
-  interface Assistant {
-    Plan chat(String message);
-  }
-
-
-  public Plan createPlan(String message, AgentSelection agentSelection) {
-
-    var assistant = AiServices.builder(Planner.Assistant.class)
-      .chatLanguageModel(chatLanguageModel)
-      .systemMessageProvider(__ -> buildSystemMessage(agentSelection))
-      .build();
-
-    return assistant.chat(message);
+  public Effect<Plan> createPlan(Request request) {
+    return effects()
+      .systemMessage(buildSystemMessage(request.agentSelection))
+      .userMessage(request.message())
+      .responseAs(Plan.class)
+      .thenReply();
   }
 }
