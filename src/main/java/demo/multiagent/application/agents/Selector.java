@@ -21,7 +21,7 @@ public class Selector extends Agent {
 
   public Selector(AgentRegistry agentsRegistry) {
 
-    var agents = agentsRegistry.agentsWithRole("doer");
+    var agents = agentsRegistry.agentsWithRole("worker");
 
     this.systemMessage = """
         Your job is to analyse the user request and select the agents that should be used to answer the user.

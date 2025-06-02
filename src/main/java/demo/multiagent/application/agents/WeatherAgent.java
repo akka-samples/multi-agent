@@ -13,7 +13,7 @@ import demo.multiagent.domain.AgentResponse;
       An agent that provides weather information. It can provide current weather, forecasts, and other
       related information.
     """,
-    role = "doer"
+    role = "worker"
 )
 public class WeatherAgent extends Agent {
 

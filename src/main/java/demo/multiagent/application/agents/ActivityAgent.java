@@ -12,7 +12,7 @@ import demo.multiagent.domain.AgentResponse;
       An agent that suggests activities in the real world. Like for example, a team building activity, sports,
       an indoor or outdoor game, board games, a city trip, etc.
     """,
-    role = "doer"
+    role = "worker"
 )
 public class ActivityAgent extends Agent {
 
