@@ -1,12 +1,11 @@
 package demo.multiagent.application.agents;
 
+import akka.javasdk.JsonSupport;
 import akka.javasdk.agent.Agent;
 import akka.javasdk.agent.AgentRegistry;
 import akka.javasdk.annotations.AgentDescription;
 import akka.javasdk.annotations.ComponentId;
 import demo.multiagent.domain.AgentSelection;
-
-import java.util.stream.Collectors;
 
 @ComponentId("selector-agent")
 @AgentDescription(
@@ -21,10 +20,8 @@ public class Selector extends Agent {
   private final String systemMessage;
 
   public Selector(AgentRegistry agentsRegistry) {
-    var agents =
-        agentsRegistry.agentIdsWithRole("doer").stream()
-            .map(agentsRegistry::agentInfoAsJson)
-            .collect(Collectors.joining(", ", "[", "]"));
+
+    var agents = agentsRegistry.agentsWithRole("doer");
 
     this.systemMessage = """
         Your job is to analyse the user request and select the agents that should be used to answer the user.
@@ -53,7 +50,7 @@ public class Selector extends Agent {
         %s
       """
         .stripIndent()
-        .formatted(agents);
+        .formatted(JsonSupport.encodeToString(agents));
   }
 
 

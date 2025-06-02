@@ -1,13 +1,12 @@
 package demo.multiagent.application.agents;
 
+import akka.javasdk.JsonSupport;
 import akka.javasdk.agent.Agent;
 import akka.javasdk.agent.AgentRegistry;
 import akka.javasdk.annotations.AgentDescription;
 import akka.javasdk.annotations.ComponentId;
 import demo.multiagent.domain.AgentSelection;
 import demo.multiagent.domain.Plan;
-
-import java.util.stream.Collectors;
 
 @ComponentId("planner-agent")
 @AgentDescription(
@@ -26,11 +25,8 @@ public class Planner extends Agent {
     this.agentsRegistry = agentsRegistry;
   }
 
-  private String buildSystemMessage(AgentSelection selection) {
-    var agents = selection.agents().stream()
-        .map(agentsRegistry::agentInfoAsJson)
-        .collect(Collectors.joining(", ", "[", "]"));
-
+  private String buildSystemMessage(AgentSelection agentSelection) {
+    var agents = agentSelection.agents().stream().map(agentsRegistry::agentInfo).toList();
     return """
         Your job is to analyse the user request and the list of agents and devise the best order in which
         the agents should be called in order to produce a suitable answer to the user.
@@ -63,7 +59,7 @@ public class Planner extends Agent {
       
       """.stripIndent()
       // note: here we are not using the full list of agents, but a pre-selection
-      .formatted(agents);
+      .formatted(JsonSupport.encodeToString(agents));
   }
 
   public Effect<Plan> createPlan(Request request) {
