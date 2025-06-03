@@ -3,8 +3,11 @@ package demo.multiagent.application.agents;
 import akka.javasdk.agent.Agent;
 import akka.javasdk.annotations.AgentDescription;
 import akka.javasdk.annotations.ComponentId;
+import akka.javasdk.annotations.Description;
+import akka.javasdk.annotations.FunctionTool;
 import akka.javasdk.http.HttpClientProvider;
 import demo.multiagent.domain.AgentResponse;
+import dev.langchain4j.agent.tool.Tool;
 
 @ComponentId("weather-agent")
 @AgentDescription(
@@ -27,21 +30,24 @@ public class WeatherAgent extends Agent {
     """ + AgentResponse.FORMAT_INSTRUCTIONS;
 
   private final HttpClientProvider httpClientProvider;
+    private final WeatherService weatherService;
 
-  public WeatherAgent(HttpClientProvider httpClientProvider) {
+  public WeatherAgent(HttpClientProvider httpClientProvider, WeatherService weatherService) {
     this.httpClientProvider = httpClientProvider;
+    this.weatherService = weatherService;
   }
 
   public Agent.Effect<AgentResponse> query(String message) {
     return effects()
-        .reply(new AgentResponse("It's always sunny", null));
-
-    // FIXME tool WeatherService
-//    return effects()
-//        .systemMessage(SYSTEM_MESSAGE)
-//        .userMessage(message)
-//        .responseAs(AgentResponse.class)
-//        .thenReply();
+        .systemMessage(SYSTEM_MESSAGE)
+        .userMessage(message)
+        .responseAs(AgentResponse.class)
+        .thenReply();
   }
 
+
+  @FunctionTool(description = "Returns the weather forecast for a given city.")
+  private String getWeather(@Description("A location or city name.") String location) {
+    return weatherService.getWeather(location);
+  }
 }
