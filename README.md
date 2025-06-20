@@ -118,16 +118,26 @@ The weather in Madrid is rainy tomorrow, so you might want to explore indoor att
 
 ## Deployment
 
-You can use the [Akka Console](https://console.akka.io) to create a project and deploy this service.
-
+Build container image:
 ```shell
-# Build container image
 mvn clean install -DskipTests
-
-# Deploy using Akka CLI
-akka service deploy multi-agent multi-agent:tag-name --push
 ```
 
-For more information on deployment, refer to [Deploy and manage services](https://doc.akka.io/operations/services/deploy-service.html).
+Install the `akka` CLI as documented in [Install Akka CLI](https://doc.akka.io/reference/cli/index.html).
 
-To understand the Akka concepts that are the basis for this example, see [Development Process](https://doc.akka.io/concepts/development-process.html) in the documentation.
+Set up secret containing OpenAI API key:
+```shell
+akka secret create generic travel-secret \
+  --literal openai-key=$OPENAI_API_KEY \
+  --literal weather-key=$WEATHER_API_KEY
+```
+
+Deploy the service using the image tag from above `mvn install` and the secrets:
+```shell
+akka service deploy travel-agent travel-agent:tag-name --push \
+  --secret-env OPENAI_API_KEY=travel-secret/openai-key \
+  --secret-env WEATHER_API_KEY=travel-secret/weather-key
+```
+
+Refer to [Deploy and manage services](https://doc.akka.io/operations/services/deploy-service.html)
+for more information.
