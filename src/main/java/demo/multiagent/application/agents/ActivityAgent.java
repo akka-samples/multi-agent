@@ -5,22 +5,21 @@ import akka.javasdk.annotations.AgentDescription;
 import akka.javasdk.annotations.ComponentId;
 import demo.multiagent.domain.AgentResponse;
 
-// tag::description[]
 @ComponentId("activity-agent")
 @AgentDescription(
   name = "Activity Agent",
   description = """
-      An agent that suggests activities in the real world. Like for example, a team building activity, sports,
-      an indoor or outdoor game, board games, a city trip, etc.
+      An agent that suggests activities in the real world. Like for example,
+      a team building activity, sports, an indoor or outdoor game, board games, a city trip, etc.
     """,
     role = "worker"
 )
 public class ActivityAgent extends Agent {
-// end::description[]
 
   private static final String SYSTEM_MESSAGE = ("""
-      You are an activity agent. Your job is to suggest activities in the real world. Like for example, a team
-      building activity, sports, an indoor or outdoor game, board games, a city trip, etc.
+      You are an activity agent. Your job is to suggest activities in the real world.
+      Like for example, a team building activity, sports, an indoor or outdoor game,
+      board games, a city trip, etc.
     """.stripIndent() + AgentResponse.FORMAT_INSTRUCTIONS);
 
 public Effect<AgentResponse> query(String message) {

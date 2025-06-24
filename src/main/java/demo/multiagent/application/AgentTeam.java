@@ -22,10 +22,8 @@ import java.util.Map;
 import static demo.multiagent.application.AgentTeam.Status.*;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-// tag::plan[]
 @ComponentId("agent-team")
 public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
-  // end::plan[]
 
   enum Status {
     STARTED,
@@ -86,7 +84,6 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
     this.componentClient = componentClient;
   }
 
-  // tag::plan[]
   @Override
   public WorkflowDef<State> definition() {
     return workflow()
@@ -109,7 +106,6 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
       return effects().error("Workflow '" + commandContext().workflowId() + "' already started");
     }
   }
-  // end::plan[]
 
   public ReadOnlyEffect<String> getAnswer() {
     if (currentState() == null) {
@@ -119,7 +115,6 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
     }
   }
 
-  // tag::plan[]
   private static final String SELECT_AGENTS = "select-agents";
 
   private Step selectAgent() {
@@ -129,7 +124,15 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
               .invoke(currentState().userQuery)) // <4>
       .andThen(AgentSelection.class, selection -> {
         logger.debug("Selected agents: {}", selection.agents());
-          return effects().transitionTo(CREATE_PLAN, selection); // <5>
+          if (selection.agents().isEmpty()) {
+            var newState = currentState()
+              .withFinalAnswer("Couldn't find any agent(s) able to respond to the original query.")
+              .failed();
+            return effects().updateState(newState).end(); // terminate workflow
+          } else {
+            return effects().transitionTo(CREATE_PLAN, selection); // <5>
+
+          }
         }
       );
   }
@@ -150,18 +153,9 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
       )
       .andThen(Plan.class, plan -> {
         logger.debug("Execution plan: {}", plan);
-        if (plan.steps().isEmpty()) {
-
-          var newState = currentState()
-            .withFinalAnswer("Couldn't find any agent(s) able to respond to the original query.")
-            .failed();
-          return effects().updateState(newState).end(); // terminate workflow
-
-        } else {
           return effects()
             .updateState(currentState().withPlan(plan))
             .transitionTo(EXECUTE_PLAN); // <7>
-          }
         }
       );
   }
@@ -197,7 +191,6 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
       );
   }
 
-  // tag::dynamicCall[]
   private AgentResponse callAgent(String agentId, String query) {
     // We know the id of the agent to call, but not the agent class.
     // Could be WeatherAgent or ActivityAgent.
@@ -210,8 +203,6 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
             .dynamicCall(agentId); // <9>
     return call.invoke(query);
   }
-  // end::dynamicCall[]
-  // end::plan[]
 
   private static final String SUMMARIZE = "summarize";
 
@@ -240,6 +231,4 @@ public class AgentTeam extends Workflow<AgentTeam.State> { // <1>
   private String sessionId() {
     return commandContext().workflowId();
   }
-  // tag::plan[]
 }
-// end::plan[]
