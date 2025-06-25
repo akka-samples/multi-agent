@@ -1,4 +1,4 @@
-package demo.multiagent.application.agents;
+package demo.multiagent.application;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +19,6 @@ public class FakeWeatherService implements WeatherService {
     var date = dateOptional
       .orElse(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
 
-    return "It's always sunny %s at %s.".formatted(date, location);
+    return "It's always sunny %s in %s.".formatted(date, location);
   }
 }
