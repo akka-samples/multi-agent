@@ -1,13 +1,14 @@
 package demo.multiagent.application;
 
+import demo.multiagent.domain.AgentSelection;
+import demo.multiagent.domain.Plan;
+import demo.multiagent.domain.PlanStep;
+
 import akka.javasdk.JsonSupport;
 import akka.javasdk.agent.Agent;
 import akka.javasdk.agent.AgentRegistry;
 import akka.javasdk.annotations.AgentDescription;
 import akka.javasdk.annotations.ComponentId;
-import demo.multiagent.domain.AgentSelection;
-import demo.multiagent.domain.Plan;
-import demo.multiagent.domain.PlanStep;
 
 import java.util.List;
 
