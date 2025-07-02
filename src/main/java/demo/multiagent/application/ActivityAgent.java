@@ -50,7 +50,7 @@ public Effect<String> query(AgentRequest request) {
     userMessage = request.message() +
         "\nPreferences:\n" +
         allPreferences.entries().stream()
-            .collect(Collectors.joining("'\n", "- ", ""));
+            .collect(Collectors.joining("\n", "- ", ""));
   }
 
   return effects()
