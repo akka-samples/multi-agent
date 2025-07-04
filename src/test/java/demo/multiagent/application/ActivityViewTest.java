@@ -2,6 +2,8 @@ package demo.multiagent.application;
 
 import akka.javasdk.testkit.TestKit;
 import akka.javasdk.testkit.TestKitSupport;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import demo.multiagent.application.ActivityView.ActivityEntries;
 import demo.multiagent.application.ActivityView.ActivityEntry;
 import org.awaitility.Awaitility;
@@ -16,7 +18,9 @@ public class ActivityViewTest extends TestKitSupport {
   @Override
   protected TestKit.Settings testKitSettings() {
     return TestKit.Settings.DEFAULT
-        .withWorkflowIncomingMessages("agent-team");
+        .withAdditionalConfig(ConfigFactory.parseString("akka.javasdk.agent.openai.api-key=fake-key"))
+        .withWorkflowIncomingMessages("agent-team")
+      ;
   }
 
   @Test
