@@ -45,4 +45,6 @@ jobs:
 
       - name: mvn test
         run: |-
+          # fake key is enough to ensure Bootstrap won't crash
+          export OPENAI_API_KEY=fake-key 
           mvn test --no-transfer-progress
