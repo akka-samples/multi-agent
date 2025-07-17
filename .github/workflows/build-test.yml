@@ -9,8 +9,8 @@ permissions:
 
 jobs:
   verify:
-    name: Verfiy
-    runs-on: ubuntu-22.04
+    name: Verify
+    runs-on: Akka-Default
     if: github.event.repository.fork == false
     steps:
       - name: Checkout
