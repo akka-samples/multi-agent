@@ -2,12 +2,12 @@ package demo.multiagent.application;
 
 import akka.javasdk.agent.Agent;
 import akka.javasdk.annotations.AgentDescription;
-import akka.javasdk.annotations.ComponentId;
+import akka.javasdk.annotations.Component;
 import akka.javasdk.client.ComponentClient;
 import demo.multiagent.domain.AgentRequest;
 import java.util.stream.Collectors;
 
-@ComponentId("activity-agent")
+@Component(id = "activity-agent")
 @AgentDescription(
   name = "Activity Agent",
   description = """
